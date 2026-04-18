@@ -1,0 +1,2597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freda — Automated tourist VAT recovery at the card-scheme level</title>
+<meta name="description" content="Freda recovers unclaimed tourist VAT automatically. No paper forms. No airport booths. No merchant integration. Card-scheme infrastructure, registered operator.">
+<link rel="canonical" href="https://fredamoney.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fredamoney.com/">
+<meta property="og:title" content="Freda — Automated tourist VAT recovery at the card-scheme level">
+<meta property="og:description" content="Freda recovers unclaimed tourist VAT automatically. No paper forms. No airport booths. No merchant integration. Card-scheme infrastructure, registered operator.">
+<meta property="og:image" content="https://fredamoney.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Freda — Automated tourist VAT recovery at the card-scheme level">
+<meta name="twitter:description" content="Freda recovers unclaimed tourist VAT automatically. No paper forms. No airport booths. No merchant integration. Card-scheme infrastructure, registered operator.">
+<meta name="twitter:image" content="https://fredamoney.com/og-image.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500;1,9..144,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS — FREDA WEB BRAND
+   ═══════════════════════════════════════════ */
+:root {
+  /* Surfaces (dark) */
+  --ink:          #000000;
+  --ink-2:        #080808;
+  --ink-3:        #101010;
+  --ink-4:        #161616;
+  --ink-5:        #1c1c1c;
+
+  /* Paper (light inverse) */
+  --paper:        #ffffff;
+  --paper-2:      #fafaf7;
+  --paper-3:      #f4f4f0;
+
+  /* Text on dark */
+  --text:         #f5f5f5;
+  --text-dim:     #b0b0b0;
+  --text-muted:   #6b7280;
+  --text-faint:   #3a3a3a;
+
+  /* Text on light */
+  --ink-text:     #111111;
+  --ink-dim:      #6b7280;
+  --ink-muted:    #a1a1aa;
+
+  /* Accents */
+  --pink:         #e91e63;
+  --pink-bright:  #ff3a78;
+  --pink-soft:    rgba(233,30,99,0.10);
+  --pink-glow:    rgba(233,30,99,0.22);
+  --pink-pale:    #fde7ef;
+
+  --cyan:         #00b0f0;
+  --cyan-light:   #0284b8;
+  --cyan-soft:    rgba(0,176,240,0.10);
+  --cyan-pale:    #e1f5fe;
+
+  /* Borders */
+  --rule-dark:    rgba(255,255,255,0.06);
+  --rule-dark-2:  rgba(255,255,255,0.10);
+  --rule-pink:    rgba(233,30,99,0.22);
+  --rule-light:   #e5e7eb;
+
+  /* Type */
+  --font-sans:    'Manrope', system-ui, sans-serif;
+  --font-serif:   'Fraunces', Georgia, serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* Motion */
+  --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Radii */
+  --r-xs:         2px;
+  --r-sm:         4px;
+  --r-md:         8px;
+  --r-lg:         16px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pink-soft) transparent;
+  /* iOS Safari 26+: rubber-band overscroll often paints from html/body — keep ink behind fixed nav */
+  background-color: var(--ink);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--pink-soft); border-radius: 3px; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--ink);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+  line-height: 1.6;
+  font-weight: 300;
+  letter-spacing: -0.005em;
+  /* Reduce “content bleeding” above fixed chrome during elastic scroll (esp. iOS 26 Safari) */
+  overscroll-behavior-y: contain;
+}
+
+/* Fine film-grain overlay for editorial texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.022;
+  pointer-events: none;
+  z-index: 10000;
+  mix-blend-mode: overlay;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+button { border: none; background: none; cursor: pointer; font-family: inherit; color: inherit; }
+
+/* ═══════════════════════════════════════════
+   WORDMARK — THE SIGNATURE FREDA TREATMENT
+   ═══════════════════════════════════════════ */
+.wordmark {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  display: inline-flex;
+  align-items: baseline;
+  line-height: 1;
+}
+
+.wordmark .dot {
+  color: var(--pink);
+  margin-left: 0.02em;
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 9999;
+  padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  background: rgba(0,0,0,0.55);
+  border-bottom: 1px solid transparent;
+  transition: background 0.4s ease, border-color 0.4s ease;
+  isolation: isolate;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+/* Opaque band above the bar: iOS 26 Safari can show scrolling layers above fixed nav during overscroll */
+.nav::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -160px;
+  height: 160px;
+  background: var(--ink);
+  pointer-events: none;
+  z-index: 0;
+}
+.nav > * {
+  position: relative;
+  z-index: 1;
+}
+
+.nav.scrolled {
+  background: rgba(0,0,0,0.88);
+  border-bottom-color: var(--rule-dark);
+}
+
+.nav-logo {
+  font-size: 1.4rem;
+  color: var(--text);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2.25rem;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+  transition: color 0.25s ease;
+  position: relative;
+}
+
+.nav-links a:hover { color: var(--text); }
+
+.nav-links a:not(.nav-cta)::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--pink);
+  transition: width 0.35s var(--ease-out);
+}
+
+.nav-links a:not(.nav-cta):hover::after { width: 100%; }
+
+.nav-cta {
+  padding: 0.52rem 1.1rem;
+  background: transparent;
+  border: 1px solid var(--pink);
+  color: var(--pink) !important;
+  font-size: 0.72rem !important;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--r-xs);
+  transition: all 0.3s ease;
+}
+
+.nav-cta:hover {
+  background: var(--pink);
+  color: var(--ink) !important;
+  box-shadow: 0 0 24px var(--pink-glow);
+}
+
+.nav-mobile-toggle {
+  display: none;
+  color: var(--text);
+  font-size: 1.3rem;
+}
+
+/* ═══════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 7.5rem clamp(1.25rem, 4vw, 3.5rem) 5rem;
+  background: radial-gradient(ellipse 100% 80% at 70% 20%, #0a0507 0%, var(--ink) 55%);
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(233,30,99,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(233,30,99,0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 75% 55% at 50% 40%, black 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 40%, black 0%, transparent 70%);
+  opacity: 0.9;
+  animation: gridBreath 12s ease-in-out infinite;
+}
+
+@keyframes gridBreath {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.45; }
+}
+
+/* Floating orbs — pink and cyan */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+}
+
+.hero-orb--1 {
+  width: 720px;
+  height: 720px;
+  background: radial-gradient(circle, rgba(233,30,99,0.14) 0%, transparent 65%);
+  top: -12%;
+  right: -8%;
+  animation: orbDrift 26s ease-in-out infinite;
+}
+
+.hero-orb--2 {
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(0,176,240,0.07) 0%, transparent 65%);
+  bottom: -12%;
+  left: -6%;
+  animation: orbDrift 32s ease-in-out infinite reverse;
+}
+
+.hero-orb--3 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(233,30,99,0.08) 0%, transparent 65%);
+  top: 55%;
+  left: 38%;
+  animation: orbDrift 38s ease-in-out infinite 6s;
+}
+
+@keyframes orbDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(42px, -32px) scale(1.06); }
+  50% { transform: translate(-18px, 38px) scale(0.95); }
+  75% { transform: translate(28px, 18px) scale(1.03); }
+}
+
+/* Scan line */
+.hero-scanline {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 20%, var(--pink-soft) 50%, transparent 80%);
+  top: 0;
+  animation: scanSweep 8s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes scanSweep {
+  0%   { top: -5%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 105%; opacity: 0; }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 840px;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--pink);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0;
+  animation: revealUp 0.95s var(--ease-out) 0.15s forwards;
+}
+
+.hero-eyebrow .pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--pink);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 8px var(--pink-glow);
+}
+
+.hero-eyebrow .pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1px solid var(--pink-soft);
+  border-radius: 50%;
+  animation: pingPulse 2.4s ease-out infinite;
+}
+
+@keyframes pingPulse {
+  0%   { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+.hero-h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(2.6rem, 6.2vw, 5.25rem);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: revealUp 0.95s var(--ease-out) 0.35s forwards;
+  max-width: 16ch;
+}
+
+.hero-h1 em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--pink);
+  letter-spacing: -0.025em;
+}
+
+.hero-sub {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  line-height: 1.7;
+  max-width: 560px;
+  margin-bottom: 2.75rem;
+  opacity: 0;
+  animation: revealUp 0.95s var(--ease-out) 0.55s forwards;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  opacity: 0;
+  animation: revealUp 0.95s var(--ease-out) 0.75s forwards;
+}
+
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes revealFromRight {
+  from { opacity: 0; transform: translate(30px, -50%); }
+  to   { opacity: 1; transform: translate(0, -50%); }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.95rem 1.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--r-xs);
+  transition: all 0.35s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: var(--pink);
+  color: var(--ink);
+}
+
+.btn--primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.7s ease;
+}
+
+.btn--primary:hover::before { transform: translateX(100%); }
+.btn--primary:hover {
+  box-shadow: 0 8px 34px var(--pink-glow);
+  transform: translateY(-1px);
+}
+
+.btn--ghost {
+  color: var(--text-dim);
+  border: 1px solid var(--rule-dark-2);
+  background: transparent;
+}
+
+.btn--ghost:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.btn-arrow {
+  font-size: 1.05em;
+  transition: transform 0.3s ease;
+}
+
+.btn:hover .btn-arrow { transform: translateX(3px); }
+
+/* Hero side panel — a "transaction in flight" card */
+.hero-panel {
+  position: absolute;
+  right: clamp(1.5rem, 5vw, 4rem);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 340px;
+  z-index: 3;
+  opacity: 0;
+  animation: revealFromRight 1.1s var(--ease-out) 1s forwards;
+}
+
+.panel-card {
+  background: rgba(12,12,12,0.85);
+  border: 1px solid var(--rule-dark);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.45), 0 0 40px rgba(233,30,99,0.04);
+}
+
+.panel-header {
+  padding: 0.72rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--rule-dark);
+  background: rgba(255,255,255,0.015);
+}
+
+.panel-header-title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.panel-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  color: var(--pink);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.panel-status-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--pink);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--pink-glow);
+  animation: pingPulse 2s ease-out infinite;
+}
+
+.panel-body {
+  padding: 1.25rem 1rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.95;
+  color: var(--text-dim);
+}
+
+.panel-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.22rem 0;
+}
+
+.panel-row .lbl { color: var(--text-muted); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.panel-row .val { color: var(--text); font-size: 0.78rem; }
+.panel-row .val-pink { color: var(--pink); font-size: 0.78rem; }
+.panel-row .val-cyan { color: var(--cyan); font-size: 0.78rem; }
+
+.panel-flow {
+  padding: 0.85rem 1rem;
+  margin: 0.7rem 0 0;
+  border-top: 1px solid var(--rule-dark);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 2;
+  color: var(--text-muted);
+}
+
+.panel-flow .step {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-flow .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  justify-self: center;
+}
+
+.panel-flow .step.done .dot { background: var(--pink); box-shadow: 0 0 8px var(--pink-glow); }
+.panel-flow .step.done span { color: var(--text-dim); }
+.panel-flow .step.active .dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan-soft); animation: pingPulse 1.6s ease-out infinite; }
+.panel-flow .step.active span { color: var(--text); }
+.panel-flow .ts { font-size: 0.54rem; color: var(--text-faint); letter-spacing: 0.08em; }
+
+.panel-stat {
+  padding: 1rem;
+  margin: 0.5rem 0.5rem 0.5rem;
+  border-top: 1px solid var(--rule-dark);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.panel-stat-cell .v {
+  font-family: var(--font-sans);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--pink);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.panel-stat-cell .l {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+}
+
+/* ═══════════════════════════════════════════
+   TICKER
+   ═══════════════════════════════════════════ */
+.ticker {
+  border-top: 1px solid var(--rule-dark);
+  border-bottom: 1px solid var(--rule-dark);
+  padding: 1.35rem 0;
+  overflow: hidden;
+  background: var(--ink-2);
+}
+
+.ticker-track {
+  display: flex;
+  gap: 2.5rem;
+  animation: tickerScroll 48s linear infinite;
+  width: max-content;
+}
+
+.ticker-item {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.ticker-item::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  background: var(--pink);
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ═══════════════════════════════════════════
+   STATS ROW
+   ═══════════════════════════════════════════ */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--rule-dark);
+  border-bottom: 1px solid var(--rule-dark);
+}
+
+.stat {
+  background: var(--ink);
+  padding: 3.25rem 2rem;
+  text-align: left;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.stat:hover { background: var(--ink-2); }
+
+.stat-value {
+  font-family: var(--font-sans);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 500;
+  color: var(--pink);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.stat-value em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 0.6rem;
+  max-width: 18ch;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION UTILITIES
+   ═══════════════════════════════════════════ */
+.section {
+  padding: clamp(5rem, 10vw, 8.5rem) clamp(1.25rem, 4vw, 3.5rem);
+  position: relative;
+}
+
+.section--light {
+  background: var(--paper);
+  color: var(--ink-text);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--pink);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 26px;
+  height: 1px;
+  background: var(--pink);
+}
+
+.heading {
+  font-family: var(--font-sans);
+  font-size: clamp(2rem, 4.2vw, 3.1rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+  max-width: 22ch;
+}
+
+.heading em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--pink);
+  letter-spacing: -0.022em;
+}
+
+.section--light .heading em { color: var(--pink); }
+
+.lede {
+  font-size: 1.08rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  line-height: 1.7;
+  max-width: 58ch;
+}
+
+.section--light .lede { color: var(--ink-dim); }
+
+.divider {
+  height: 1px;
+  background: var(--rule-dark);
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.85s var(--ease-out), transform 0.85s var(--ease-out);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════
+   PROBLEM SECTION (LIGHT)
+   ═══════════════════════════════════════════ */
+.problem {
+  position: relative;
+}
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 5rem;
+  align-items: center;
+}
+
+.problem-visual {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: var(--ink);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.1);
+}
+
+.problem-visual-inner {
+  position: absolute;
+  inset: 0;
+  padding: 2.5rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: stretch;
+  row-gap: 0.75rem;
+  color: var(--text);
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 20%, rgba(233,30,99,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,176,240,0.08) 0%, transparent 60%),
+    var(--ink);
+}
+
+.problem-visual-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.problem-visual-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.problem-stats {
+  display: grid;
+  gap: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.problem-stat {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.problem-stat:last-child { border-bottom: none; }
+
+.problem-stat .v {
+  font-family: var(--font-sans);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--pink);
+  letter-spacing: -0.02em;
+}
+
+.problem-visual-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.problem-visual-huge {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(4rem, 10vw, 7rem);
+  color: var(--pink);
+  line-height: 0.9;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.problem-visual-huge .sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 1rem;
+  font-weight: 400;
+}
+
+.problem-text p {
+  font-weight: 300;
+  font-size: 1.05rem;
+  color: var(--ink-text);
+  line-height: 1.75;
+  margin-bottom: 1.25rem;
+  max-width: 52ch;
+}
+
+.problem-text p:last-of-type { color: var(--ink-dim); }
+
+.problem-issues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--rule-light);
+  border: 1px solid var(--rule-light);
+  border-radius: var(--r-md);
+  margin-top: 2.5rem;
+  overflow: hidden;
+}
+
+.problem-issue {
+  background: var(--paper);
+  padding: 1.5rem;
+  transition: background 0.3s ease;
+}
+
+.problem-issue:hover { background: var(--paper-2); }
+
+.problem-issue-num {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--pink);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.problem-issue-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--ink-text);
+  letter-spacing: -0.01em;
+}
+
+.problem-issue-text {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  font-weight: 300;
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════
+   FOUR REASONS — WHY FREDA (DARK)
+   ═══════════════════════════════════════════ */
+.reasons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--rule-dark);
+  border: 1px solid var(--rule-dark);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-top: 4rem;
+}
+
+.reason-card {
+  background: var(--ink);
+  padding: 3rem 2.5rem;
+  position: relative;
+  transition: background 0.4s ease;
+  cursor: default;
+}
+
+.reason-card:hover { background: var(--ink-2); }
+
+.reason-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 0;
+  width: 2px;
+  background: var(--pink);
+  transition: height 0.5s var(--ease-out);
+}
+
+.reason-card:hover::before { height: 100%; }
+
+.reason-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--pink);
+  letter-spacing: 0.15em;
+  margin-bottom: 1.75rem;
+  display: inline-block;
+}
+
+.reason-title {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 0.9rem;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+}
+
+.reason-title em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--pink);
+}
+
+.reason-text {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.7;
+  max-width: 42ch;
+}
+
+/* ═══════════════════════════════════════════
+   HOW IT WORKS — TIMELINE (LIGHT)
+   ═══════════════════════════════════════════ */
+.how-header {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 4rem;
+  align-items: end;
+  margin-bottom: 5rem;
+}
+
+.how-phases {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  position: relative;
+}
+
+.how-phases::before {
+  content: '';
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  right: 30px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--pink) 0%, var(--cyan-light) 100%);
+  opacity: 0.35;
+}
+
+.phase {
+  padding-right: 1.75rem;
+  position: relative;
+}
+
+.phase:last-child { padding-right: 0; }
+
+.phase-num {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--pink);
+  color: var(--pink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.75rem;
+  position: relative;
+  z-index: 2;
+  transition: all 0.35s ease;
+}
+
+.phase:hover .phase-num {
+  background: var(--pink);
+  color: var(--paper);
+  box-shadow: 0 0 0 6px var(--pink-soft);
+}
+
+.phase-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--cyan-light);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.phase-title {
+  font-family: var(--font-sans);
+  font-size: 1.18rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
+  color: var(--ink-text);
+  letter-spacing: -0.02em;
+}
+
+.phase-text {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  font-weight: 300;
+  line-height: 1.65;
+}
+
+/* Hero callout — pink block, taken from Freda print brand */
+.hero-callout {
+  background: var(--pink-pale);
+  border-left: 4px solid var(--pink);
+  padding: 1.75rem 2rem;
+  margin-top: 4rem;
+  border-radius: var(--r-xs);
+  max-width: 900px;
+}
+
+.hero-callout-text {
+  font-size: 1rem;
+  color: var(--ink-text);
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.hero-callout-text strong { font-weight: 600; }
+
+/* ═══════════════════════════════════════════
+   HOW IT WORKS — EMBEDDED EXPLAINER
+   ═══════════════════════════════════════════ */
+.how-explainer {
+  margin-top: clamp(5rem, 9vw, 7.5rem);
+  padding-top: clamp(3.5rem, 6vw, 5rem);
+  position: relative;
+}
+
+.how-explainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 1px;
+  background: var(--pink);
+}
+
+.how-explainer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--rule-light) 25%,
+    var(--rule-light) 75%,
+    transparent 100%
+  );
+  z-index: -1;
+}
+
+.how-explainer-intro {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto clamp(2.25rem, 4vw, 3.25rem);
+}
+
+.how-explainer-intro .eyebrow {
+  margin-bottom: 1.25rem;
+}
+
+.how-explainer-title {
+  font-family: var(--font-sans);
+  font-size: clamp(1.5rem, 2.8vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--ink-text);
+  margin: 0 auto;
+  max-width: 22ch;
+}
+
+.how-explainer-title em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--pink);
+  letter-spacing: -0.018em;
+}
+
+.how-explainer-sub {
+  margin-top: 1.1rem;
+  font-size: 1rem;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+.how-explainer-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  min-height: 460px;
+  background: var(--ink);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow:
+    0 40px 80px -20px rgba(0, 0, 0, 0.22),
+    0 12px 30px -8px rgba(0, 0, 0, 0.12);
+}
+
+.how-explainer-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--ink);
+}
+
+.how-explainer-caption {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .how-explainer-frame {
+    aspect-ratio: 3 / 4;
+    min-height: 520px;
+  }
+  .how-explainer-caption {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   STAKEHOLDER TABLE (DARK)
+   ═══════════════════════════════════════════ */
+.stake-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 4rem;
+  align-items: start;
+  margin-top: 3.5rem;
+}
+
+.stake-table-wrap {
+  border: 1px solid var(--rule-dark);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.stake-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.stake-table thead th {
+  background: var(--ink-2);
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  border-bottom: 1px solid var(--rule-dark);
+}
+
+.stake-table thead th:first-child { border-right: 1px solid var(--rule-dark); }
+
+.stake-table tbody td {
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--rule-dark);
+  font-weight: 300;
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+
+.stake-table tbody tr:last-child td { border-bottom: none; }
+
+.stake-table tbody td:first-child {
+  border-right: 1px solid var(--rule-dark);
+  font-weight: 500;
+  color: var(--text);
+  font-size: 0.88rem;
+  letter-spacing: -0.005em;
+}
+
+.stake-table tbody td:last-child {
+  color: var(--pink);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stake-table tbody tr.freda-row td {
+  background: rgba(233,30,99,0.045);
+}
+
+.stake-table tbody tr.freda-row td:first-child {
+  color: var(--pink);
+}
+
+.stake-callout {
+  padding: 1.75rem 2rem;
+  background: linear-gradient(135deg, rgba(233,30,99,0.06), rgba(0,176,240,0.03));
+  border: 1px solid var(--rule-pink);
+  border-radius: var(--r-md);
+  margin-top: 1.5rem;
+}
+
+.stake-callout-title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.stake-callout-text {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════
+   BIG NUMBERS — OPPORTUNITY SECTION
+   ═══════════════════════════════════════════ */
+.opp-section { background: var(--ink-2); }
+
+.opp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--rule-dark);
+  border: 1px solid var(--rule-dark);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-top: 4rem;
+}
+
+.opp-cell {
+  background: var(--ink);
+  padding: 2.75rem 2rem;
+  transition: background 0.35s ease;
+}
+
+.opp-cell:hover { background: var(--ink-3); }
+
+.opp-cell.opp-cell--total {
+  background: rgba(233,30,99,0.045);
+}
+
+.opp-cell.opp-cell--total:hover {
+  background: rgba(233,30,99,0.07);
+}
+
+.opp-cell.opp-cell--total .opp-cell-label {
+  color: var(--pink);
+}
+
+.opp-cell-value {
+  font-family: var(--font-sans);
+  font-size: clamp(2.2rem, 3.8vw, 3rem);
+  font-weight: 500;
+  color: var(--pink);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 0.75rem;
+}
+
+.opp-cell-value em {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+.opp-cell-label {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.45rem;
+}
+
+.opp-cell-sub {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.opp-note {
+  margin-top: 2rem;
+  padding: 1.5rem 1.75rem;
+  background: rgba(255,255,255,0.015);
+  border-left: 2px solid var(--cyan);
+  border-radius: var(--r-xs);
+}
+
+.opp-note-text {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.opp-note-text strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════
+   CORPORATE ADJACENCY — EDITORIAL STRIP
+   ═══════════════════════════════════════════ */
+.adjacency {
+  padding: clamp(5rem, 10vw, 8rem) clamp(1.25rem, 4vw, 3.5rem);
+  background: var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+
+.adjacency::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(233,30,99,0.06) 0%, transparent 65%);
+  transform: translateY(-50%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.adjacency-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 5rem;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.adjacency-visual {
+  position: relative;
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adj-arc {
+  position: absolute;
+  border: 1px solid var(--rule-pink);
+  border-radius: 50%;
+  animation: adjSpin 30s linear infinite;
+}
+
+.adj-arc--1 { width: 320px; height: 320px; }
+.adj-arc--2 { width: 220px; height: 220px; animation-direction: reverse; animation-duration: 20s; border-color: rgba(0,176,240,0.15); }
+.adj-arc--3 { width: 140px; height: 140px; animation-duration: 40s; }
+
+.adj-arc::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: var(--pink);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--pink-glow);
+}
+
+.adj-arc--2::before { background: var(--cyan); box-shadow: 0 0 12px var(--cyan-soft); }
+.adj-arc--3::before { background: var(--pink-bright); }
+
+@keyframes adjSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.adj-core {
+  width: 90px;
+  height: 90px;
+  background: var(--pink);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: var(--ink);
+  position: relative;
+  z-index: 2;
+  letter-spacing: -0.04em;
+  box-shadow: 0 0 0 1px rgba(233,30,99,0.3), 0 0 40px var(--pink-glow);
+}
+
+.adj-core .dot { color: var(--ink); opacity: 1; }
+
+.adj-text p {
+  font-weight: 300;
+  font-size: 1.05rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+  margin-bottom: 1.25rem;
+}
+
+.adj-stats {
+  display: flex;
+  gap: 2.5rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule-dark);
+}
+
+.adj-stat-v {
+  font-family: var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--pink);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.adj-stat-l {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 0.4rem;
+  max-width: 18ch;
+}
+
+/* ═══════════════════════════════════════════
+   FAQ
+   ═══════════════════════════════════════════ */
+.faq-section { background: var(--ink-2); }
+
+.faq-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 5rem;
+  align-items: start;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--rule-dark);
+  overflow: hidden;
+}
+
+.faq-item:first-child { border-top: 1px solid var(--rule-dark); }
+
+.faq-q {
+  width: 100%;
+  padding: 1.75rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  letter-spacing: -0.012em;
+  cursor: pointer;
+  transition: color 0.3s;
+  gap: 2rem;
+}
+
+.faq-q:hover { color: var(--pink); }
+
+.faq-icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule-dark-2);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  transition: all 0.35s var(--ease-out);
+}
+
+.faq-item.open .faq-icon {
+  background: var(--pink-soft);
+  border-color: var(--pink);
+  color: var(--pink);
+  transform: rotate(45deg);
+}
+
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.45s var(--ease-out), padding 0.45s ease;
+}
+
+.faq-item.open .faq-a {
+  max-height: 400px;
+  padding-bottom: 1.75rem;
+}
+
+.faq-a p {
+  font-size: 0.92rem;
+  color: var(--text-dim);
+  font-weight: 300;
+  line-height: 1.75;
+  max-width: 60ch;
+}
+
+/* ═══════════════════════════════════════════
+   CTA — CLOSING
+   ═══════════════════════════════════════════ */
+.cta {
+  padding: clamp(7rem, 13vw, 11rem) clamp(1.25rem, 4vw, 3.5rem);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 900px;
+  background: radial-gradient(circle, var(--pink-soft) 0%, transparent 65%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+.cta-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.cta-eyebrow {
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta-heading {
+  font-family: var(--font-sans);
+  font-size: clamp(2.5rem, 5.4vw, 4.2rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  margin-bottom: 1.35rem;
+  max-width: 22ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta-heading em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--pink);
+}
+
+.cta-sub {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  margin-bottom: 2.75rem;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+.cta-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.cta-note {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 1.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════ */
+.footer {
+  padding: 4.5rem clamp(1.25rem, 4vw, 3.5rem) 2.25rem;
+  border-top: 1px solid var(--rule-dark);
+  background: var(--ink);
+}
+
+.footer-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr 1fr;
+  gap: 3rem;
+}
+
+.footer-brand {
+  font-size: 1.65rem;
+  color: var(--text);
+}
+
+.footer-brand-text {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  line-height: 1.7;
+  margin-top: 1rem;
+  max-width: 340px;
+}
+
+.footer-col-title {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+}
+
+.footer-links a {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  font-weight: 300;
+  margin-bottom: 0.65rem;
+  transition: color 0.3s;
+}
+
+.footer-links a:hover { color: var(--pink); }
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 3rem auto 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-legal {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.footer-legal a { transition: color 0.3s; }
+.footer-legal a:hover { color: var(--pink); }
+
+.footer-reg {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .hero-panel { display: none; }
+}
+
+@media (max-width: 1100px) {
+  .problem-grid { grid-template-columns: 1fr; gap: 3rem; }
+  .problem-visual { aspect-ratio: 16 / 9; max-height: 450px; }
+  .how-header { grid-template-columns: 1fr; gap: 1.5rem; }
+  .how-phases { grid-template-columns: repeat(2, 1fr); gap: 3rem 2rem; }
+  .how-phases::before { display: none; }
+  .stake-layout { grid-template-columns: 1fr; gap: 3rem; }
+  .adjacency-layout { grid-template-columns: 1fr; gap: 3rem; }
+  .opp-grid { grid-template-columns: 1fr 1fr; }
+  .faq-layout { grid-template-columns: 1fr; gap: 3rem; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .nav {
+    overflow: visible;
+  }
+  .nav-mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Slide/fade menu — avoid display:none ↔ flex (not animatable) */
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    margin: 0;
+    padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+    gap: 0;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.97);
+    border-bottom: 1px solid transparent;
+    align-items: stretch;
+    transition:
+      max-height 0.45s var(--ease-out),
+      opacity 0.28s ease,
+      padding 0.38s var(--ease-out),
+      gap 0.38s var(--ease-out),
+      border-color 0.25s ease,
+      visibility 0s linear 0.42s;
+  }
+  .nav-links.show {
+    max-height: min(92vh, 640px);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    padding-top: 1.15rem;
+    padding-bottom: 1.35rem;
+    gap: 1.05rem;
+    border-bottom-color: var(--rule-dark);
+    transition:
+      max-height 0.45s var(--ease-out),
+      opacity 0.3s ease 0.05s,
+      padding 0.38s var(--ease-out),
+      gap 0.38s var(--ease-out),
+      border-color 0.25s ease,
+      visibility 0s linear 0s;
+  }
+  .nav-links.show li {
+    width: 100%;
+  }
+  .nav-links.show a {
+    font-size: 0.95rem;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .nav-links.show .nav-cta {
+    width: 100%;
+    max-width: none;
+    text-align: center;
+  }
+
+  .hero { padding: 7rem 1.25rem 3.5rem; min-height: auto; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .reasons-grid { grid-template-columns: 1fr; }
+  .how-phases { grid-template-columns: 1fr; }
+  .opp-grid { grid-template-columns: 1fr; }
+  .adj-stats { gap: 1.5rem; flex-direction: column; align-items: flex-start; }
+  .footer-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .hero-actions { flex-direction: column; align-items: stretch; width: 100%; }
+  .hero-actions .btn { justify-content: center; }
+  .cta-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+  }
+  .cta-actions .btn {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+  }
+  .cta-note {
+    text-wrap: balance;
+  }
+
+  /* Problem card: absolute center headline collides with stats on short 16:9 — stack + stack stats */
+  .problem-visual {
+    aspect-ratio: 3 / 4;
+    max-height: none;
+    min-height: 21rem;
+  }
+  .problem-visual-inner {
+    padding: 1.35rem 1.1rem 1.45rem;
+    row-gap: 0.65rem;
+  }
+  .problem-visual-huge {
+    font-size: clamp(2.35rem, 11vw, 3.35rem);
+    line-height: 0.95;
+  }
+  .problem-visual-huge .sub {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    margin-top: 0.6rem;
+    line-height: 1.4;
+    max-width: 20em;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .problem-stats {
+    gap: 0.65rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+  }
+  .problem-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    padding: 0.55rem 0;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+  .problem-stat .v {
+    font-size: 1.2rem;
+  }
+
+  .problem-issues { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAVIGATION ═══════════ -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-logo wordmark">Freda<span class="dot">.</span></a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#problem">The problem</a></li>
+    <li><a href="#why">Why Freda</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#opportunity">Opportunity</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact" class="nav-cta">Partner with us</a></li>
+  </ul>
+  <button class="nav-mobile-toggle" onclick="document.getElementById('navLinks').classList.toggle('show')" aria-label="Toggle navigation">☰</button>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-orb hero-orb--1"></div>
+  <div class="hero-orb hero-orb--2"></div>
+  <div class="hero-orb hero-orb--3"></div>
+  <div class="hero-scanline"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="pulse-dot"></span>
+      Card-scheme VAT infrastructure
+    </div>
+    <h1 class="hero-h1">
+      Tourists leave <em>billions</em> in unclaimed VAT every year. We bring it back.
+    </h1>
+    <p class="hero-sub">
+      Freda recovers tourist VAT refunds automatically, at the card-scheme level. No paper forms. No airport booths. No merchant integration. The system is invisible to everyone except the tourist, who sees the refund on their card.
+    </p>
+    <div class="hero-actions">
+      <a href="#how" class="btn btn--primary">See how it works <span class="btn-arrow">→</span></a>
+      <a href="#contact" class="btn btn--ghost">Partner with us</a>
+    </div>
+  </div>
+
+  <!-- Side panel — transaction in flight -->
+  <div class="hero-panel">
+    <div class="panel-card">
+      <div class="panel-header">
+        <span class="panel-header-title">refund.flow</span>
+        <span class="panel-status"><span class="panel-status-dot"></span>Live</span>
+      </div>
+      <div class="panel-body">
+        <div class="panel-row"><span class="lbl">Merchant</span><span class="val">Paris · Retail</span></div>
+        <div class="panel-row"><span class="lbl">Gross</span><span class="val">€120.00</span></div>
+        <div class="panel-row"><span class="lbl">VAT element</span><span class="val-pink">€20.00</span></div>
+        <div class="panel-row"><span class="lbl">Card BIN</span><span class="val-cyan">Non-EU</span></div>
+      </div>
+      <div class="panel-flow">
+        <div class="step done"><span class="dot"></span><span>Purchase captured</span><span class="ts">00:00</span></div>
+        <div class="step done"><span class="dot"></span><span>BIN flagged</span><span class="ts">00:00</span></div>
+        <div class="step done"><span class="dot"></span><span>VAT computed</span><span class="ts">00:02</span></div>
+        <div class="step active"><span class="dot"></span><span>Awaiting departure</span><span class="ts">…</span></div>
+      </div>
+      <div class="panel-stat">
+        <div class="panel-stat-cell">
+          <div class="v">€16.00</div>
+          <div class="l">Back to tourist</div>
+        </div>
+        <div class="panel-stat-cell">
+          <div class="v">0</div>
+          <div class="l">Forms signed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ TICKER ═══════════ -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="ticker-item">Registered VAT refund operator</span>
+    <span class="ticker-item">Card-scheme integration</span>
+    <span class="ticker-item">Automated filing</span>
+    <span class="ticker-item">AI fraud screening</span>
+    <span class="ticker-item">Real-time eligibility</span>
+    <span class="ticker-item">Digital customs validation</span>
+    <span class="ticker-item">Cross-border tax rails</span>
+    <span class="ticker-item">Passive export proof</span>
+    <span class="ticker-item">No merchant integration</span>
+    <span class="ticker-item">Registered VAT refund operator</span>
+    <span class="ticker-item">Card-scheme integration</span>
+    <span class="ticker-item">Automated filing</span>
+    <span class="ticker-item">AI fraud screening</span>
+    <span class="ticker-item">Real-time eligibility</span>
+    <span class="ticker-item">Digital customs validation</span>
+    <span class="ticker-item">Cross-border tax rails</span>
+    <span class="ticker-item">Passive export proof</span>
+    <span class="ticker-item">No merchant integration</span>
+  </div>
+</div>
+
+<!-- ═══════════ STATS ROW ═══════════ -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-value">$100<em>bn</em></div>
+    <div class="stat-label">Tourist VAT unclaimed annually</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">~85<em>%</em></div>
+    <div class="stat-label">Of eligible refunds never reach tourists</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">0</div>
+    <div class="stat-label">Forms, booths or merchant changes</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">4</div>
+    <div class="stat-label">Phases, fully automated</div>
+  </div>
+</div>
+
+<!-- ═══════════ PROBLEM (LIGHT) ═══════════ -->
+<section class="section section--light problem" id="problem">
+  <div class="container">
+    <div class="problem-grid reveal">
+
+      <div class="problem-visual">
+        <div class="problem-visual-inner">
+          <div class="problem-visual-top">
+            <span class="problem-visual-label">Tourist VAT · Global</span>
+            <span class="problem-visual-label">2025</span>
+          </div>
+
+          <div class="problem-visual-center">
+            <div class="problem-visual-huge">
+              $100bn<span class="sub">unclaimed, every single year</span>
+            </div>
+          </div>
+
+          <div class="problem-stats">
+            <div class="problem-stat">
+              <span>Paper claim success rate</span>
+              <span class="v">~15%</span>
+            </div>
+            <div class="problem-stat">
+              <span>Legacy operator commission</span>
+              <span class="v">30–50%</span>
+            </div>
+            <div class="problem-stat">
+              <span>Tourist refund friction</span>
+              <span class="v">High</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="problem-text">
+        <div class="eyebrow">The problem</div>
+        <h2 class="heading">A system still stuck in <em>1988</em></h2>
+        <p>Tourist VAT refunds are a legal entitlement. A non-resident who buys goods and takes them home is owed the VAT back — in principle. In practice, the system to recover it has barely changed in four decades.</p>
+        <p>It runs on paper forms, airport booth queues, and customs stamps. The friction is so high that up to 85% of eligible refunds are never made. Of the minority that are claimed, legacy operators can take 30 to 50 percent in commission. The tourist walks away with pennies on the pound.</p>
+
+        <div class="problem-issues">
+          <div class="problem-issue">
+            <div class="problem-issue-num">Issue 01</div>
+            <div class="problem-issue-title">Paper forms</div>
+            <div class="problem-issue-text">A tax-free form filled by hand at the till. Lost, torn or mis-filed before it reaches the refund booth.</div>
+          </div>
+          <div class="problem-issue">
+            <div class="problem-issue-num">Issue 02</div>
+            <div class="problem-issue-title">Airport booths</div>
+            <div class="problem-issue-text">The tourist must find, queue for, and physically present goods at a customs booth that is often short-staffed or shut.</div>
+          </div>
+          <div class="problem-issue">
+            <div class="problem-issue-num">Issue 03</div>
+            <div class="problem-issue-title">Manual filing</div>
+            <div class="problem-issue-text">Operators file claims with tax authorities one paper claim at a time. The friction is the business.</div>
+          </div>
+          <div class="problem-issue">
+            <div class="problem-issue-num">Issue 04</div>
+            <div class="problem-issue-title">High commission</div>
+            <div class="problem-issue-text">Legacy operators keep a third to a half of every recovered refund. The tourist is the one who loses.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ WHY FREDA — FOUR REASONS ═══════════ -->
+<section class="section" id="why">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Why Freda</div>
+      <h2 class="heading">Four structural <em>advantages</em></h2>
+      <p class="lede">Every one of these is a dependency the legacy system can't remove. Each one is the consequence of running at the card-scheme level, rather than at the till.</p>
+    </div>
+
+    <div class="reasons-grid reveal">
+      <div class="reason-card">
+        <span class="reason-num">01 / Integration</span>
+        <h3 class="reason-title">No merchant <em>integration</em></h3>
+        <p class="reason-text">Data comes directly from the card network, not the retailer. Merchants change nothing. Their POS, their staff, their VAT return — all untouched. The system is invisible to the shop.</p>
+      </div>
+      <div class="reason-card">
+        <span class="reason-num">02 / Paper</span>
+        <h3 class="reason-title">No paper <em>forms</em></h3>
+        <p class="reason-text">A digital tax-free form is generated from the transaction the moment the card taps. No signatures. No passports. No customs-hall queues for small purchases.</p>
+      </div>
+      <div class="reason-card">
+        <span class="reason-num">03 / Validation</span>
+        <h3 class="reason-title">No airport <em>booth</em></h3>
+        <p class="reason-text">Departure is proven passively from card-network signals in most cases. Where customs inspection is required for high-value goods, a QR code handles it digitally.</p>
+      </div>
+      <div class="reason-card">
+        <span class="reason-num">04 / Refund</span>
+        <h3 class="reason-title">Refund at the <em>card</em></h3>
+        <p class="reason-text">Recovered VAT credits back to the same card the tourist used to pay. No bank details. No app. No follow-up. The tourist does nothing and the refund simply arrives.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ HOW IT WORKS (LIGHT) ═══════════ -->
+<section class="section section--light" id="how">
+  <div class="container">
+    <div class="how-header reveal">
+      <div>
+        <div class="eyebrow">How it works</div>
+        <h2 class="heading">Purchase to refund, in <em>four phases</em></h2>
+      </div>
+      <p class="lede">Eligibility, validation, and export are all derived from card-network data. The tourist does nothing. The retailer changes nothing. The tax authority receives a digital claim.</p>
+    </div>
+
+    <div class="how-phases reveal">
+      <div class="phase">
+        <div class="phase-num">1</div>
+        <div class="phase-label">Phase 01 · Purchase</div>
+        <div class="phase-title">Tourist taps their card</div>
+        <p class="phase-text">The card network detects a foreign-issued BIN in real time and flags the transaction as refund-eligible. The trigger is automatic. The tourist does nothing.</p>
+      </div>
+      <div class="phase">
+        <div class="phase-num">2</div>
+        <div class="phase-label">Phase 02 · Capture</div>
+        <div class="phase-title">Freda enriches the transaction</div>
+        <p class="phase-text">Using enhanced merchant data — MCC, country, VAT number, gross and net — Freda computes the exact VAT owed and generates a digital tax-free form. No merchant involvement required.</p>
+      </div>
+      <div class="phase">
+        <div class="phase-num">3</div>
+        <div class="phase-label">Phase 03 · Validation</div>
+        <div class="phase-title">AI screening and export proof</div>
+        <p class="phase-text">Fraud screening scores every claim in real time. For low-value goods, departure is proven passively from card signals. For high-value goods, a QR code replaces the customs stamp.</p>
+      </div>
+      <div class="phase">
+        <div class="phase-num">4</div>
+        <div class="phase-label">Phase 04 · Refund</div>
+        <div class="phase-title">Back to the tourist's card</div>
+        <p class="phase-text">Freda submits the claim to the tax authority as a registered operator. On settlement, the refund credits back to the same card the tourist used to pay.</p>
+      </div>
+    </div>
+
+    <div class="hero-callout reveal">
+      <p class="hero-callout-text">
+        <strong>The tourist never signs a form, queues at a booth, or sees a kiosk.</strong> They just get a refund on their card after they travel home — from VAT they were always entitled to but, today, would almost certainly never have seen.
+      </p>
+    </div>
+
+    <div class="how-explainer reveal">
+      <div class="how-explainer-intro">
+        <div class="eyebrow">See it in motion</div>
+        <h3 class="how-explainer-title">The same story, <em>told visually</em></h3>
+        <p class="how-explainer-sub">A forty-five second walkthrough — from tap, to refund.</p>
+      </div>
+      <div class="how-explainer-frame">
+        <!-- Interactive explainer: explainer.html in the same folder as index.html; music.mp3 next to explainer.html. -->
+        <iframe
+          class="how-explainer-iframe"
+          src="explainer.html"
+          title="Freda — how it works (interactive)"
+          loading="lazy"
+          allow="autoplay"
+        ></iframe>
+      </div>
+      <p class="how-explainer-caption">Spacebar toggles play</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ STAKEHOLDERS (DARK) ═══════════ -->
+<section class="section" id="stakeholders">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Stakeholders</div>
+      <h2 class="heading">A system that <em>pays everyone</em></h2>
+      <p class="lede">Freda doesn't divert tax revenue. It collects refunds that would otherwise go unclaimed — the tourist's own legal entitlement. Every participant earns on money that wasn't previously in circulation.</p>
+    </div>
+
+    <div class="stake-layout reveal">
+      <div>
+        <div class="stake-callout">
+          <div class="stake-callout-title">Net-new, not redistributed</div>
+          <p class="stake-callout-text">
+            The tax authority keeps a protective buffer on every refund Freda files. Because the alternative today is that ~85% of this VAT is never claimed at all, the authority captures new revenue on money that would otherwise have stayed uncollected — while remaining protected against error and misuse.
+          </p>
+        </div>
+      </div>
+
+      <div class="stake-table-wrap">
+        <table class="stake-table">
+          <thead>
+            <tr>
+              <th>Stakeholder</th>
+              <th>Role</th>
+              <th>Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tourists</td>
+              <td>The rightful claimant</td>
+              <td>Up to 80%</td>
+            </tr>
+            <tr>
+              <td>Tax authorities</td>
+              <td>Protective buffer on each refund</td>
+              <td>5%</td>
+            </tr>
+            <tr>
+              <td>Retailers</td>
+              <td>Programme participation fee</td>
+              <td>2.5%</td>
+            </tr>
+            <tr>
+              <td>Card networks</td>
+              <td>Network facilitation fee</td>
+              <td>2.5%</td>
+            </tr>
+            <tr class="freda-row">
+              <td>Freda</td>
+              <td>Registered operator · filing agent</td>
+              <td>10%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ OPPORTUNITY ═══════════ -->
+<section class="section opp-section" id="opportunity">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">The opportunity</div>
+      <h2 class="heading">Capturing just <em>10%</em> of the unclaimed</h2>
+      <p class="lede">Approximately $100 billion in tourist VAT goes unclaimed every year. Recovering even a tenth creates $10 billion in annual value — and returns 80% of it to the tourists it was always owed to.</p>
+    </div>
+
+    <div class="opp-grid reveal">
+      <div class="opp-cell">
+        <div class="opp-cell-value">$8<em>bn</em></div>
+        <div class="opp-cell-label">To tourists</div>
+        <div class="opp-cell-sub">Refunded automatically to cards</div>
+      </div>
+      <div class="opp-cell">
+        <div class="opp-cell-value">$1<em>bn</em></div>
+        <div class="opp-cell-label">Freda operating share</div>
+        <div class="opp-cell-sub">Agent commission, materially below legacy</div>
+      </div>
+      <div class="opp-cell">
+        <div class="opp-cell-value">$500<em>m</em></div>
+        <div class="opp-cell-label">To tax authorities</div>
+        <div class="opp-cell-sub">Net-new revenue on previously unclaimed VAT</div>
+      </div>
+      <div class="opp-cell">
+        <div class="opp-cell-value">$250<em>m</em></div>
+        <div class="opp-cell-label">To card networks</div>
+        <div class="opp-cell-sub">Facilitation on every flagged transaction</div>
+      </div>
+      <div class="opp-cell">
+        <div class="opp-cell-value">$250<em>m</em></div>
+        <div class="opp-cell-label">To retailers</div>
+        <div class="opp-cell-sub">Participation fee, zero process change</div>
+      </div>
+      <div class="opp-cell opp-cell--total">
+        <div class="opp-cell-value">$10<em>bn</em></div>
+        <div class="opp-cell-label">Total unlocked</div>
+        <div class="opp-cell-sub">Annual, at 10% capture of unclaimed pool</div>
+      </div>
+    </div>
+
+    <div class="opp-note reveal">
+      <p class="opp-note-text">
+        <strong>Note: </strong>These figures represent only the tourist VAT opportunity. They exclude the volume already handled today by legacy operators — which Freda can capture with a superior experience — and the separate corporate VAT recovery market, where industry estimates put unclaimed cross-border VAT at $20 billion+ annually, on top of a $2–3 trillion total flow.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ ADJACENCY ═══════════ -->
+<section class="adjacency" id="adjacency">
+  <div class="adjacency-layout reveal">
+    <div class="adjacency-visual">
+      <div class="adj-arc adj-arc--1"></div>
+      <div class="adj-arc adj-arc--2"></div>
+      <div class="adj-arc adj-arc--3"></div>
+      <div class="adj-core wordmark">F<span class="dot">.</span></div>
+    </div>
+    <div class="adj-text">
+      <div class="eyebrow">What's next</div>
+      <h2 class="heading">Tourist VAT is the <em>entry point</em></h2>
+      <p>The same card-based infrastructure extends directly to corporate VAT — the cross-border B2B spend where industry estimates put unclaimed VAT at <strong style="color:var(--text);font-weight:500;">$20 billion+</strong> every year, on top of a $2–3 trillion flow. Our tourist product is the wedge; the enterprise market is the destination.</p>
+      <div class="adj-stats">
+        <div>
+          <div class="adj-stat-v">$2–3<em style="font-family:var(--font-serif);font-style:italic">tn</em></div>
+          <div class="adj-stat-l">Cross-border B2B spend annually</div>
+        </div>
+        <div>
+          <div class="adj-stat-v">$20<em style="font-family:var(--font-serif);font-style:italic">bn+</em></div>
+          <div class="adj-stat-l">Unclaimed corporate VAT every year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ FAQ ═══════════ -->
+<section class="section faq-section" id="faq">
+  <div class="container">
+    <div class="faq-layout reveal">
+      <div>
+        <div class="eyebrow">FAQ</div>
+        <h2 class="heading">Questions partners <em>always ask</em></h2>
+        <p class="lede">For deeper technical or regulatory questions, our team is happy to walk through the model in a confidential conversation.</p>
+        <a href="#contact" class="btn btn--ghost" style="margin-top:2rem;">Talk to us <span class="btn-arrow">→</span></a>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item open">
+          <button class="faq-q">
+            Is Freda a registered VAT refund operator?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Yes. Freda operates as a registered VAT refund operator, which is the legal status that entitles us to file refund claims with tax authorities on behalf of tourists. The paperwork is digital; the legal basis is the same as every other licensed operator in the market.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            Does a retailer need to integrate anything?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>No. That's the point. Retailers change nothing about their till, their staff training, their payment processor or their VAT return. Eligibility, the tax-free form, the validation and the claim all happen in the card-network data flow — not at the point of sale.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            How does the tourist actually receive their refund?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>As a credit back to the same card they used to pay. No bank details, no app, no paperwork, no separate account. Once the tax authority settles the claim, the tourist simply sees the refund arrive on their card statement.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            What happens with fraud and misuse?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Every flagged transaction is scored by a real-time screening layer that checks for unusual volumes, repeat high-value claims, patterns inconsistent with tourist behaviour, and velocity anomalies. Transactions exceeding the risk threshold are held or rejected. Beyond screening, the tax authority retains a buffer on every refund, which protects them against residual error without affecting the tourist's share.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            What's a tax authority's upside in supporting this?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Two things. First, the protective buffer is net-new revenue on refunds that, under today's paper regime, would overwhelmingly never have been claimed at all. Second, the card-based evidentiary chain is arguably stronger than the signed-form regime — every step is independently verifiable against network data, rather than self-declared on a piece of paper.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            Where will Freda launch first?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Our launch pathway is sequenced by jurisdictional fit: mature VAT regimes with established digital refund filing, strong card-scheme penetration, and high inbound tourist volumes. We are in active partner conversations and will announce specific corridors in due course.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta" id="contact">
+  <div class="cta-inner">
+    <div class="eyebrow cta-eyebrow">Partner with Freda</div>
+    <h2 class="cta-heading">Ready to recover the <em>unclaimed?</em></h2>
+    <p class="cta-sub">We partner with card networks, tax authorities, retailers and tourism bodies to return VAT refunds to the tourists they belong to. If that's you, we'd love to talk.</p>
+    <div class="cta-actions">
+      <a href="mailto:hello@freda.tax" class="btn btn--primary">Start a conversation <span class="btn-arrow">→</span></a>
+      <a href="#how" class="btn btn--ghost">Read the process</a>
+    </div>
+    <p class="cta-note">Confidential · No obligation · Senior team on every call</p>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <a href="#" class="footer-brand wordmark">Freda<span class="dot">.</span></a>
+      <p class="footer-brand-text">Card-scheme infrastructure for automated tourist VAT recovery. Built to return refunds to the tourists they belong to — without the paper, the booths, or the friction that kept 85% of eligible refunds unclaimed.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Product</div>
+      <div class="footer-links">
+        <a href="#how">How it works</a>
+        <a href="#why">Why Freda</a>
+        <a href="#stakeholders">Stakeholders</a>
+        <a href="#opportunity">Opportunity</a>
+        <a href="#adjacency">Corporate VAT</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Company</div>
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Team</a>
+        <a href="#">Press</a>
+        <a href="#">Careers</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Connect</div>
+      <div class="footer-links">
+        <a href="mailto:hello@freda.tax">hello@freda.tax</a>
+        <a href="#">LinkedIn</a>
+        <a href="#contact">Partner with us</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p class="footer-legal">© 2026 Freda Ltd. All rights reserved. &nbsp;|&nbsp; <a href="#">Privacy</a> &nbsp;|&nbsp; <a href="#">Terms</a> &nbsp;|&nbsp; <a href="#">Cookies</a></p>
+    <p class="footer-reg">Registered VAT refund operator. Confidential — currently in partner outreach.</p>
+  </div>
+</footer>
+
+<!-- ═══════════ JAVASCRIPT ═══════════ -->
+<script>
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach(el => observer.observe(el));
+
+// FAQ accordion
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// Nav background on scroll
+const nav = document.getElementById('nav');
+const onScroll = () => {
+  if (window.scrollY > 60) nav.classList.add('scrolled');
+  else nav.classList.remove('scrolled');
+};
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
+// Close mobile menu on link click
+document.querySelectorAll('#navLinks a').forEach(a => {
+  a.addEventListener('click', () => {
+    document.getElementById('navLinks').classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
